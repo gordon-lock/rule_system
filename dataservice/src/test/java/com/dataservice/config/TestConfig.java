@@ -6,11 +6,11 @@ import com.dataservice.service.MetadataService;
 import com.dataservice.service.QueryService;
 import com.dataservice.service.ComplexQueryService;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Alternative;
 import jakarta.enterprise.inject.Produces;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.sql.DataSource;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -22,24 +22,24 @@ public class TestConfig {
 
     private static final Logger logger = LoggerFactory.getLogger(TestConfig.class);
 
+    @Alternative
     @Produces
     @ApplicationScoped
-    @jakarta.enterprise.inject.Alternative
-    public MetadataService mockMetadataService(DataSource dataSource) {
+    public MetadataService mockMetadataService() {
         return new MockMetadataService();
     }
 
+    @Alternative
     @Produces
     @ApplicationScoped
-    @jakarta.enterprise.inject.Alternative
-    public QueryService mockQueryService(DataSource dataSource) {
+    public QueryService mockQueryService() {
         return new MockQueryService();
     }
 
+    @Alternative
     @Produces
     @ApplicationScoped
-    @jakarta.enterprise.inject.Alternative
-    public ComplexQueryService mockComplexQueryService(DataSource dataSource) {
+    public ComplexQueryService mockComplexQueryService() {
         return new MockComplexQueryService();
     }
 
@@ -138,18 +138,19 @@ public class TestConfig {
         public QueryService.QueryResult executeQuery(String sql) {
             logger.info("Mock: Executing query: {}", sql);
             
-            List<Map<String, Object>> data = new ArrayList<>();
+            List<Map<String, String>> data = new ArrayList<>();
             
             if (sql.toLowerCase().contains("users")) {
-                data.add(Map.of("id", 1L, "name", "John Doe", "email", "john@example.com", "age", 30));
-                data.add(Map.of("id", 2L, "name", "Jane Smith", "email", "jane@example.com", "age", 25));
-                data.add(Map.of("id", 3L, "name", "Bob Johnson", "email", "bob@example.com", "age", 35));
+                data.add(Map.of("id", "1L", "name", "John Doe", "email", "john@example.com", "age", "30"));
+                data.add(Map.of("id", "2L", "name", "Jane Smith", "email", "jane@example.com", "age", "25"));
+                data.add(Map.of("id", "3L", "name", "Bob Johnson", "email", "bob@example.com", "age", "35"));
             } else if (sql.toLowerCase().contains("orders")) {
-                data.add(Map.of("order_id", 1001L, "user_id", 1L, "amount", 150.50, "status", "completed"));
-                data.add(Map.of("order_id", 1002L, "user_id", 2L, "amount", 75.25, "status", "pending"));
-                data.add(Map.of("order_id", 1003L, "user_id", 1L, "amount", 200.00, "status", "completed"));
+                data.add(Map.of("order_id", "1001L", "user_id", "1L", "amount", "150.50", "status", "completed"));
+                data.add(Map.of("order_id", "1002L", "user_id", "2L", "amount", "75.25", "status", "pending"));
+                data.add(Map.of("order_id", "1003L", "user_id", "1L", "amount", "200.00", "status", "completed"));
             } else {
-                data.add(Map.of("result", "Mock query executed successfully", "sql", sql));
+                data.add(Map.of("id", "1", "name", "test"));
+                data.add(Map.of("id", "2", "name", "test2"));
             }
             
             return new QueryService.QueryResult(data, 50L, sql);
@@ -169,18 +170,18 @@ public class TestConfig {
 
     private static class MockComplexQueryService implements ComplexQueryService {
         @Override
-        public QueryService.QueryResult executeComplexQuery(String queryType, Map<String, Object> parameters) {
+        public QueryService.QueryResult executeComplexQuery(String queryType, Map<String, String> parameters) {
             logger.info("Mock: Executing complex query: {}", queryType);
             
-            List<Map<String, Object>> data = new ArrayList<>();
+            List<Map<String, String>> data = new ArrayList<>();
             
             switch (queryType) {
                 case "userWithOrders":
-                    data.add(Map.of("user_id", 1L, "user_name", "John Doe", "order_count", 2, "total_amount", 350.50));
-                    data.add(Map.of("user_id", 2L, "user_name", "Jane Smith", "order_count", 1, "total_amount", 75.25));
+                    data.add(Map.of("user_id", "1", "user_name", "John Doe", "order_count", "2", "total_amount", "350.50"));
+                    data.add(Map.of("user_id", "2L", "user_name", "Jane Smith", "order_count", "1", "total_amount", "75.25"));
                     break;
                 case "userOrderStats":
-                    data.add(Map.of("user_id", 1L, "total_orders", 2, "total_amount", 350.50, "avg_amount", 175.25));
+                    data.add(Map.of("user_id", "1L", "total_orders", "2", "total_amount", "350.50", "avg_amount", "175.25"));
                     break;
                 default:
                     data.add(Map.of("result", "Mock complex query executed", "type", queryType));
@@ -190,7 +191,7 @@ public class TestConfig {
         }
 
         @Override
-        public Map<String, QueryService.QueryResult> executeBatchQueries(Map<String, Map<String, Object>> queries) {
+        public Map<String, QueryService.QueryResult> executeBatchQueries(Map<String, Map<String, String>> queries) {
             logger.info("Mock: Executing batch queries");
             
             Map<String, QueryService.QueryResult> results = new HashMap<>();

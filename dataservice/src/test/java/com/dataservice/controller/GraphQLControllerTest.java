@@ -1,5 +1,6 @@
 package com.dataservice.controller;
 
+import com.dataservice.config.TestProfile;
 import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.Test;
 
@@ -8,6 +9,7 @@ import static org.hamcrest.CoreMatchers.*;
 import static org.hamcrest.Matchers.greaterThan;
 
 @QuarkusTest
+@io.quarkus.test.junit.TestProfile(TestProfile.class)
 class GraphQLControllerTest {
 
     @Test

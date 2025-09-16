@@ -35,7 +35,7 @@ public class QueryServiceImpl implements QueryService {
         try (Connection conn = dataSource.getConnection()) {
             logger.info("Executing SQL: {}", sql);
             
-            List<Map<String, Object>> results = new ArrayList<>();
+            List<Map<String, String>> results = new ArrayList<>();
             try (PreparedStatement stmt = conn.prepareStatement(sql);
                  ResultSet rs = stmt.executeQuery()) {
                 
@@ -43,10 +43,10 @@ public class QueryServiceImpl implements QueryService {
                 int columnCount = metaData.getColumnCount();
                 
                 while (rs.next()) {
-                    Map<String, Object> row = new HashMap<>();
+                    Map<String, String> row = new HashMap<>();
                     for (int i = 1; i <= columnCount; i++) {
                         String columnName = metaData.getColumnName(i);
-                        Object value = rs.getObject(i);
+                        String value = rs.getObject(i).toString();
                         row.put(columnName, value);
                     }
                     results.add(row);

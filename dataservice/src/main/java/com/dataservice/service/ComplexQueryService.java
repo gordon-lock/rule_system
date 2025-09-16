@@ -5,7 +5,7 @@ import java.util.Map;
 
 public interface ComplexQueryService {
     
-    QueryService.QueryResult executeComplexQuery(String queryType, Map<String, Object> parameters);
+    QueryService.QueryResult executeComplexQuery(String queryType, Map<String, String> parameters);
     
-    Map<String, QueryService.QueryResult> executeBatchQueries(Map<String, Map<String, Object>> queries);
+    Map<String, QueryService.QueryResult> executeBatchQueries(Map<String, Map<String, String>> queries);
 } 

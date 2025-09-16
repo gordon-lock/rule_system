@@ -9,6 +9,7 @@ import org.eclipse.microprofile.graphql.*;
 import jakarta.inject.Inject;
 import java.util.List;
 import java.util.Map;
+import com.dataservice.model.ColumnMetadata;
 
 @GraphQLApi
 public class GraphQLController {
@@ -53,12 +54,12 @@ public class GraphQLController {
     public QueryService.QueryResult query(@Name("sql") String sql) {
         return queryService.executeQuery(sql);
     }
-
+//
     @Query("queryTable")
     @Description("Query table with conditions")
-    public QueryService.QueryResult queryTable(@Name("tableName") String tableName, 
-                                              @Name("whereClause") String whereClause, 
-                                              @Name("orderBy") String orderBy, 
+    public QueryService.QueryResult queryTable(@Name("tableName") String tableName,
+                                              @Name("whereClause") String whereClause,
+                                              @Name("orderBy") String orderBy,
                                               @Name("limit") Integer limit) {
         int queryLimit = limit != null ? limit : 1000;
         return queryService.executeTableQuery(tableName, whereClause, orderBy, queryLimit);
@@ -67,9 +68,9 @@ public class GraphQLController {
     @Query("queryTableWithSchema")
     @Description("Query table with schema and conditions")
     public QueryService.QueryResult queryTableWithSchema(@Name("schema") String schema,
-                                                        @Name("tableName") String tableName, 
-                                                        @Name("whereClause") String whereClause, 
-                                                        @Name("orderBy") String orderBy, 
+                                                        @Name("tableName") String tableName,
+                                                        @Name("whereClause") String whereClause,
+                                                        @Name("orderBy") String orderBy,
                                                         @Name("limit") Integer limit) {
         int queryLimit = limit != null ? limit : 1000;
         return queryService.executeTableQuery(schema, tableName, whereClause, orderBy, queryLimit);
@@ -99,7 +100,7 @@ public class GraphQLController {
             "LEFT JOIN orders o ON u.id = o.user_id " +
             "WHERE u.id = '%s' " +
             "ORDER BY o.order_date DESC " +
-            "LIMIT %d", 
+            "LIMIT %d",
             userId, orderLimit != null ? orderLimit : 10
         );
         return queryService.executeQuery(sql);
@@ -115,7 +116,7 @@ public class GraphQLController {
             "AVG(amount) as avg_amount, " +
             "MAX(order_date) as last_order_date " +
             "FROM orders " +
-            "WHERE user_id = '%s'", 
+            "WHERE user_id = '%s'",
             userId
         );
         return queryService.executeQuery(sql);
@@ -138,24 +139,16 @@ public class GraphQLController {
     }
 
     // Schema mappings for nested fields
-    public List<String> getColumns(TableMetadata table) {
-        return table.getColumns().stream()
-                .map(column -> String.format("{\"name\":\"%s\",\"type\":\"%s\",\"nullable\":%s,\"comment\":\"%s\"}", 
-                        column.getColumnName(),
-                        column.getDataType(),
-                        column.isNullable(),
-                        column.getComment() != null ? column.getComment() : ""))
-                .toList();
+    public List<ColumnMetadata> getColumns(TableMetadata table) {
+        return table.getColumns();
     }
 
     public List<String> getPartitions(TableMetadata table) {
         return table.getPartitions();
     }
 
-    public List<String> getData(QueryService.QueryResult result) {
-        return result.getData().stream()
-                .map(row -> row.toString())
-                .toList();
+    public List<Map<String, String>> getData(QueryService.QueryResult result) {
+        return result.getData();
     }
 
     public long getExecutionTime(QueryService.QueryResult result) {

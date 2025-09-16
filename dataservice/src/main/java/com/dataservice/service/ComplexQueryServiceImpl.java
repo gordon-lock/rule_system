@@ -29,14 +29,14 @@ public class ComplexQueryServiceImpl implements ComplexQueryService {
     }
 
     @Override
-    public QueryService.QueryResult executeComplexQuery(String queryType, Map<String, Object> parameters) {
+    public QueryService.QueryResult executeComplexQuery(String queryType, Map<String, String> parameters) {
         long startTime = System.currentTimeMillis();
         
         try (Connection conn = dataSource.getConnection()) {
             String sql = buildComplexQuery(queryType, parameters);
             logger.info("Executing complex query: {}", sql);
             
-            List<Map<String, Object>> results = new ArrayList<>();
+            List<Map<String, String>> results = new ArrayList<>();
             try (PreparedStatement stmt = conn.prepareStatement(sql);
                  ResultSet rs = stmt.executeQuery()) {
                 
@@ -44,10 +44,10 @@ public class ComplexQueryServiceImpl implements ComplexQueryService {
                 int columnCount = metaData.getColumnCount();
                 
                 while (rs.next()) {
-                    Map<String, Object> row = new HashMap<>();
+                    Map<String, String> row = new HashMap<>();
                     for (int i = 1; i <= columnCount; i++) {
                         String columnName = metaData.getColumnName(i);
-                        Object value = rs.getObject(i);
+                        String value = rs.getObject(i).toString();
                         row.put(columnName, value);
                     }
                     results.add(row);
@@ -67,7 +67,7 @@ public class ComplexQueryServiceImpl implements ComplexQueryService {
     /**
      * 构建复杂查询SQL
      */
-    private String buildComplexQuery(String queryType, Map<String, Object> parameters) {
+    private String buildComplexQuery(String queryType, Map<String, String> parameters) {
         switch (queryType) {
             case "user_with_orders":
                 return buildUserWithOrdersQuery(parameters);
@@ -85,9 +85,9 @@ public class ComplexQueryServiceImpl implements ComplexQueryService {
     /**
      * 构建用户和订单关联查询
      */
-    private String buildUserWithOrdersQuery(Map<String, Object> params) {
+    private String buildUserWithOrdersQuery(Map<String, String> params) {
         String userId = (String) params.get("userId");
-        Integer limit = (Integer) params.getOrDefault("limit", 10);
+        Integer limit = Integer.valueOf(params.getOrDefault("limit", "10"));
         
         return String.format(
             "SELECT u.id, u.name, u.email, u.age, " +
@@ -104,7 +104,7 @@ public class ComplexQueryServiceImpl implements ComplexQueryService {
     /**
      * 构建用户订单统计查询
      */
-    private String buildUserOrderStatsQuery(Map<String, Object> params) {
+    private String buildUserOrderStatsQuery(Map<String, String> params) {
         String userId = (String) params.get("userId");
         
         return String.format(
@@ -123,9 +123,9 @@ public class ComplexQueryServiceImpl implements ComplexQueryService {
     /**
      * 构建搜索用户和订单查询
      */
-    private String buildSearchUsersOrdersQuery(Map<String, Object> params) {
+    private String buildSearchUsersOrdersQuery(Map<String, String> params) {
         String searchTerm = (String) params.get("searchTerm");
-        Integer limit = (Integer) params.getOrDefault("limit", 20);
+        Integer limit = Integer.valueOf(params.getOrDefault("limit", "20"));
         
         return String.format(
             "SELECT u.id, u.name, u.email, u.age, " +
@@ -142,9 +142,9 @@ public class ComplexQueryServiceImpl implements ComplexQueryService {
     /**
      * 构建多表聚合查询
      */
-    private String buildMultiTableAggregationQuery(Map<String, Object> params) {
+    private String buildMultiTableAggregationQuery(Map<String, String> params) {
         String groupBy = (String) params.getOrDefault("groupBy", "user_id");
-        Integer limit = (Integer) params.getOrDefault("limit", 10);
+        Integer limit = Integer.valueOf(params.getOrDefault("limit", "10"));
         
         return String.format(
             "SELECT u.name, u.email, " +
@@ -161,12 +161,12 @@ public class ComplexQueryServiceImpl implements ComplexQueryService {
     }
 
     @Override
-    public Map<String, QueryService.QueryResult> executeBatchQueries(Map<String, Map<String, Object>> queries) {
+    public Map<String, QueryService.QueryResult> executeBatchQueries(Map<String, Map<String, String>> queries) {
         Map<String, QueryService.QueryResult> results = new HashMap<>();
         
-        for (Map.Entry<String, Map<String, Object>> entry : queries.entrySet()) {
+        for (Map.Entry<String, Map<String, String>> entry : queries.entrySet()) {
             String queryName = entry.getKey();
-            Map<String, Object> params = entry.getValue();
+            Map<String, String> params = entry.getValue();
             
             try {
                 QueryService.QueryResult result = executeComplexQuery(queryName, params);

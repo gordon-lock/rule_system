@@ -12,17 +12,17 @@ public interface QueryService {
     QueryResult executeTableQuery(String schema, String tableName, String whereClause, String orderBy, int limit);
 
     class QueryResult {
-        private final List<Map<String, Object>> data;
+        private final List<Map<String, String>> data;
         private final long executionTimeMs;
         private final String executedSql;
 
-        public QueryResult(List<Map<String, Object>> data, long executionTimeMs, String executedSql) {
+        public QueryResult(List<Map<String, String>> data, long executionTimeMs, String executedSql) {
             this.data = data;
             this.executionTimeMs = executionTimeMs;
             this.executedSql = executedSql;
         }
 
-        public List<Map<String, Object>> getData() {
+        public List<Map<String, String>> getData() {
             return data;
         }
 

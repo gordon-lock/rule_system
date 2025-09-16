@@ -1,13 +1,33 @@
 package com.dataservice.model;
 
+import org.eclipse.microprofile.graphql.Name;
+import org.eclipse.microprofile.graphql.Description;
 import java.util.List;
 
+@Description("Table metadata information")
 public class TableMetadata {
+    @Name("catalog")
+    @Description("Database catalog name")
     private String catalog;
+    
+    @Name("schema")
+    @Description("Database schema name")
     private String schema;
+    
+    @Name("tableName")
+    @Description("Table name")
     private String tableName;
+    
+    @Name("tableType")
+    @Description("Table type (BASE TABLE, VIEW, etc.)")
     private String tableType;
+    
+    @Name("columns")
+    @Description("List of table columns")
     private List<ColumnMetadata> columns;
+    
+    @Name("partitions")
+    @Description("List of partition columns")
     private List<String> partitions;
 
     public TableMetadata() {}

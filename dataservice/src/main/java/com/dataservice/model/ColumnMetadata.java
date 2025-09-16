@@ -1,10 +1,28 @@
 package com.dataservice.model;
 
+import org.eclipse.microprofile.graphql.Name;
+import org.eclipse.microprofile.graphql.Description;
+
+@Description("Column metadata information")
 public class ColumnMetadata {
+    @Name("name")
+    @Description("Column name")
     private String columnName;
+    
+    @Name("type")
+    @Description("Column data type")
     private String dataType;
+    
+    @Name("comment")
+    @Description("Column comment")
     private String comment;
+    
+    @Name("nullable")
+    @Description("Whether the column is nullable")
     private boolean nullable;
+    
+    @Name("isPartitionColumn")
+    @Description("Whether the column is a partition column")
     private boolean isPartitionColumn;
 
     public ColumnMetadata() {}

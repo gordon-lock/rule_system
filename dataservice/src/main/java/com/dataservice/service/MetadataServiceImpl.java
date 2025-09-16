@@ -34,13 +34,13 @@ public class MetadataServiceImpl implements MetadataService {
                         "FROM information_schema.tables " +
                         "WHERE table_schema NOT IN ('information_schema', 'sys') " +
                         "ORDER BY table_schema, table_name";
-            
+
             logger.info("Executing SQL: {}", sql);
-            
+
             List<TableMetadata> tables = new ArrayList<>();
             try (PreparedStatement stmt = conn.prepareStatement(sql);
                  ResultSet rs = stmt.executeQuery()) {
-                
+
                 while (rs.next()) {
                     TableMetadata table = new TableMetadata();
                     table.setCatalog(rs.getString("table_catalog"));
@@ -50,9 +50,9 @@ public class MetadataServiceImpl implements MetadataService {
                     tables.add(table);
                 }
             }
-            
+
             return tables;
-            
+
         } catch (SQLException e) {
             logger.error("Failed to get all tables: {}", e.getMessage(), e);
             throw new RuntimeException("Failed to get all tables: " + e.getMessage(), e);
@@ -70,13 +70,13 @@ public class MetadataServiceImpl implements MetadataService {
             String sql = "SELECT table_catalog, table_schema, table_name, table_type " +
                         "FROM information_schema.tables " +
                         "WHERE table_schema = ? AND table_name = ?";
-            
+
             logger.info("Executing SQL: {} with params: schema={}, tableName={}", sql, schema, tableName);
-            
+
             try (PreparedStatement stmt = conn.prepareStatement(sql)) {
                 stmt.setString(1, schema);
                 stmt.setString(2, tableName);
-                
+
                 try (ResultSet rs = stmt.executeQuery()) {
                     if (rs.next()) {
                         TableMetadata table = new TableMetadata();
@@ -84,17 +84,17 @@ public class MetadataServiceImpl implements MetadataService {
                         table.setSchema(rs.getString("table_schema"));
                         table.setTableName(rs.getString("table_name"));
                         table.setTableType(rs.getString("table_type"));
-                        
+
                         table.setColumns(getTableColumns(conn, schema, tableName));
                         table.setPartitions(getTablePartitions(conn, schema, tableName));
-                        
+
                         return table;
                     }
                 }
             }
-            
+
             return null;
-            
+
         } catch (SQLException e) {
             logger.error("Failed to get table metadata for {}.{}: {}", schema, tableName, e.getMessage(), e);
             throw new RuntimeException("Failed to get table metadata: " + e.getMessage(), e);
@@ -108,20 +108,20 @@ public class MetadataServiceImpl implements MetadataService {
                         "FROM information_schema.tables " +
                         "WHERE table_schema NOT IN ('information_schema', 'sys') " +
                         "ORDER BY table_schema";
-            
+
             logger.info("Executing SQL: {}", sql);
-            
+
             List<String> schemas = new ArrayList<>();
             try (PreparedStatement stmt = conn.prepareStatement(sql);
                  ResultSet rs = stmt.executeQuery()) {
-                
+
                 while (rs.next()) {
                     schemas.add(rs.getString("table_schema"));
                 }
             }
-            
+
             return schemas;
-            
+
         } catch (SQLException e) {
             logger.error("Failed to get schemas: {}", e.getMessage(), e);
             throw new RuntimeException("Failed to get schemas: " + e.getMessage(), e);
@@ -133,12 +133,12 @@ public class MetadataServiceImpl implements MetadataService {
                     "FROM information_schema.columns " +
                     "WHERE table_schema = ? AND table_name = ? " +
                     "ORDER BY ordinal_position";
-        
+
         List<ColumnMetadata> columns = new ArrayList<>();
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, schema);
             stmt.setString(2, tableName);
-            
+
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
                     ColumnMetadata column = new ColumnMetadata();
@@ -150,31 +150,31 @@ public class MetadataServiceImpl implements MetadataService {
                 }
             }
         }
-        
+
         return columns;
     }
-
+//
     private List<String> getTablePartitions(Connection conn, String schema, String tableName) throws SQLException {
         try {
             // For Iceberg tables, we can query partition information
             String sql = "SELECT DISTINCT partition_column " +
                         "FROM information_schema.table_partitions " +
                         "WHERE table_schema = ? AND table_name = ?";
-            
+
             List<String> partitions = new ArrayList<>();
             try (PreparedStatement stmt = conn.prepareStatement(sql)) {
                 stmt.setString(1, schema);
                 stmt.setString(2, tableName);
-                
+
                 try (ResultSet rs = stmt.executeQuery()) {
                     while (rs.next()) {
                         partitions.add(rs.getString("partition_column"));
                     }
                 }
             }
-            
+
             return partitions;
-            
+
         } catch (SQLException e) {
             logger.warn("Failed to get partitions for {}.{}: {}", schema, tableName, e.getMessage());
             return new ArrayList<>();

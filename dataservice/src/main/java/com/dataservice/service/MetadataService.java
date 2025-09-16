@@ -19,10 +19,10 @@ import java.util.Map;
 public interface MetadataService {
     
     List<TableMetadata> getAllTables();
-    
+
     TableMetadata getTableMetadata(String tableName);
-    
+//
     TableMetadata getTableMetadata(String schema, String tableName);
-    
+//
     List<String> getSchemas();
 } 
