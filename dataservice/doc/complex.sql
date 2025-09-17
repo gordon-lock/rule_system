@@ -10,6 +10,7 @@ CREATE TABLE custom_queries (
     table_id BIGINT NOT NULL REFERENCES table_registry(id) ON DELETE CASCADE,
     description TEXT,
     sql_template TEXT NOT NULL,
+    endpoint VARCHAR(255) NOT NULL,
     sql_engine VARCHAR(20) NOT NULL DEFAULT 'TRINO'
         CHECK (sql_engine IN ('TRINO', 'POSTGRES', 'MYSQL', 'GENERIC')),
     is_active BOOLEAN NOT NULL DEFAULT TRUE,

@@ -1,0 +1,84 @@
+registrations:
+  - endpoint: v1/get_user_info
+    type: "custom"
+    metadata:
+      name: "user_custom_query"
+      description: "query all the info from user"
+      table_name: "users"
+      created_by: "developer@example.com"
+
+    query:
+      sql: |
+        SELECT
+          id,
+          username,
+          email,
+          status,
+          created_at,
+          updated_at
+        FROM users
+        WHERE
+          (:status IS NULL OR status = :status)
+          AND (:email_pattern IS NULL OR email LIKE :email_pattern)
+          AND created_at >= COALESCE(:min_created_at, '2020-01-01')
+        ORDER BY created_at DESC
+        LIMIT :limit OFFSET :offset
+
+      engine: "TRINO"
+
+    parameters:
+      - name: "status"
+        type: "STRING"
+        required: false
+        description: "user status filter"
+
+      - name: "email_pattern"
+        type: "STRING"
+        required: false
+        description: "user email"
+        default: "%@example.com"
+
+      - name: "min_created_at"
+        type: "DATE"
+        required: false
+
+      - name: "limit"
+        type: "INTEGER"
+        required: true
+        default: 100
+
+      - name: "offset"
+        type: "INTEGER"
+        required: true
+        default: 0
+
+    result_mapping:
+      - source_column: "id"
+        target_field: "userId"
+        field_type: "ID"
+        description: "user ID"
+
+      - source_column: "username"
+        target_field: "name"
+        field_type: "STRING"
+
+      - source_column: "email"
+        target_field: "email"
+        field_type: "STRING"
+
+      - source_column: "status"
+        target_field: "status"
+        field_type: "STRING"
+
+      - source_column: "created_at"
+        target_field: "createTime"
+        field_type: "DATETIME"
+        transformation_type: "FORMAT"
+        transformation_expression: "TO_CHAR(created_at, 'YYYY-MM-DD HH24:MI:SS')"
+
+    graphql:
+      operation_type: "QUERY"
+      requires_authentication: true
+      rate_limit_per_hour: 1000
+      max_rows_per_request: 100
+      timeout_ms: 30000
