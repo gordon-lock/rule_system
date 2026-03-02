@@ -1,0 +1,99 @@
+task_id: ftp_region_sales
+description: 按区域拆分销售数据，通过SFTP上传至不同目录
+
+source:
+  type: mysql
+  connection_id: mysql_prod
+  sql: |
+    SELECT 
+      order_date,
+      region,
+      store_id,
+      product_code,
+      quantity,
+      unit_price,
+      total_amount,
+      customer_id
+    FROM sales_orders
+    WHERE order_date = '{{ ds }}'  # 使用Airflow执行日期
+  params: {}
+  max_rows: 1000000
+
+transform:
+  clean_nulls: drop                 # 删除空值行
+  date_columns: [order_date]
+  date_format: "%Y-%m-%d"
+  mask_fields: [customer_id]        # 对客户ID进行脱敏
+  custom_transforms:
+    - name: add_tax
+      module: custom_transforms.finance
+      function: calculate_tax
+      args: { tax_rate: 0.1, amount_column: "total_amount" }
+
+encryption:
+  enabled: false                     # 可根据需要启用
+
+compression:
+  enabled: true
+  type: zip                          # 输出为zip压缩包
+
+outputs:
+  - format: csv                       # 输出格式为CSV
+    destination: sftp                  # 使用SFTP（也可使用ftp）
+    target:
+      # SFTP连接配置
+      host: "sftp.example.com"
+      port: 22
+      username: "{{ var.value.sftp_user }}"
+      password: "{{ var.value.sftp_password }}"   # 或使用private_key
+      # 或者使用私钥认证（二选一）
+      # private_key: "/opt/airflow/keys/id_rsa"
+      # private_key_passphrase: "{{ var.value.sftp_key_passphrase }}"
+
+      # 远程路径配置
+      remote_base_path: "/upload/sales/{{ ds_nodash }}/"   # 基础路径，支持Jinja模板
+
+      # 文件名生成规则（可使用以下变量：task_id, ds, split_key, format）
+      filename_template: "{{ split_key }}_sales.{{ format }}"  # 例如：north_sales.csv
+
+      # SFTP传输模式
+      transfer_mode: "binary"          # binary 或 ascii
+
+      # 连接超时（秒）
+      timeout: 60
+
+      # 是否在传输前创建远程目录（如不存在）
+      mkdirs: true
+
+      # 其他SFTP选项（可选）
+      compress: false                  # 是否在传输层压缩（不是文件压缩）
+
+    # 拆分配置：根据region列将数据拆分为多个文件
+    split_by:
+      column: region
+      conditions:
+        north_region:                   # 文件标识，将用于filename_template中的split_key
+          region: ["Beijing", "Tianjin", "Hebei"]
+        east_region:
+          region: ["Shanghai", "Jiangsu", "Zhejiang"]
+        south_region:
+          region: ["Guangdong", "Fujian", "Hainan"]
+        west_region:
+          region: ["Sichuan", "Chongqing", "Yunnan"]
+        # 未匹配到的数据默认会被忽略；若想保留，可增加一个default条件
+        # default:
+        #   region: null   # 特殊处理逻辑需要在代码中支持，此处仅作示意
+
+  # 也可以同时输出到其他目标，例如同时通过FTP上传和邮件发送
+  - format: excel
+    destination: ftp   # 使用FTP（明文传输）
+    target:
+      host: "ftp.legacy.com"
+      port: 21
+      username: "{{ var.value.ftp_user }}"
+      password: "{{ var.value.ftp_password }}"
+      remote_base_path: "/exports/"
+      filename_template: "full_report_{{ ds }}.xlsx"
+      passive_mode: true                # FTP被动模式
+      transfer_mode: "binary"
+    # 该输出不拆分，发送整个文件

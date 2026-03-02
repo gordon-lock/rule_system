@@ -1,0 +1,86 @@
+task_id: kafka_user_events
+description: 用户行为数据导出到Kafka，每条记录作为独立消息
+
+source:
+  type: mysql
+  connection_id: mysql_analytics
+  sql: |
+    SELECT 
+      user_id, 
+      event_type, 
+      page_url, 
+      event_time,
+      properties
+    FROM user_events
+    WHERE event_time >= DATE_SUB(NOW(), INTERVAL 1 HOUR)
+  params: {}
+  max_rows: 500000
+
+transform:
+  clean_nulls: fill_zero
+  date_columns: [event_time]
+  date_format: "%Y-%m-%d %H:%M:%S"
+  mask_fields: []   # 无需脱敏
+  custom_transforms:
+    - name: flatten_properties
+      module: custom_transforms.json
+      function: flatten_json_column
+      args: { column: "properties" }
+
+encryption:
+  enabled: false
+
+compression:
+  enabled: false    # Kafka 本身支持压缩，可独立配置
+
+outputs:
+  - format: json    # 每条消息将是一个JSON对象
+    destination: message_queue   # 或直接使用 kafka
+    target:
+      # Kafka 基本连接配置
+      bootstrap_servers:
+        - "kafka-broker1:9092"
+        - "kafka-broker2:9092"
+        - "kafka-broker3:9092"
+      topic: "user-events-raw"
+
+      # 认证（可选）
+      security_protocol: "SASL_SSL"          # PLAINTEXT, SSL, SASL_PLAINTEXT, SASL_SSL
+      sasl_mechanism: "PLAIN"                 # PLAIN, SCRAM-SHA-256, SCRAM-SHA-512, GSSAPI
+      sasl_plain_username: "{{ var.value.kafka_username }}"
+      sasl_plain_password: "{{ var.value.kafka_password }}"
+      ssl_cafile: "/opt/airflow/certs/ca.pem"  # SSL 证书路径
+
+      # 消息发送模式
+      message_mode: "per_record"                # per_record 或 bulk
+
+      # 消息键生成策略（可选）
+      key:
+        type: "field"                            # constant, field, none
+        field_name: "user_id"                     # 使用 user_id 字段作为消息键
+        # 若 type=constant，则需提供 constant_value
+
+      # 分区指定（可选，默认由 key 哈希决定）
+      partition: null                             # 可指定固定分区号
+
+      # Producer 高级配置
+      producer_config:
+        acks: "all"                               # 0, 1, all
+        compression_type: "snappy"                 # none, gzip, snappy, lz4, zstd
+        batch_size: 16384                          # 字节
+        linger_ms: 5
+        max_request_size: 1048576                  # 1MB
+        retries: 3
+        retry_backoff_ms: 100
+        enable_idempotence: true                    # 开启幂等性
+        max_in_flight_requests_per_connection: 5    # 配合幂等性使用
+
+      # 消息头（可选）
+      headers:
+        source: "mysql"
+        environment: "production"
+
+      # 错误处理
+      error_handling:
+        log_errors: true
+        continue_on_error: false                     # 遇到错误是否继续发送剩余消息
